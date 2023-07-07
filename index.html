@@ -19,6 +19,7 @@
       height: 100vh;
       background-color: grey;
       display: none;
+      padding: 20px;
     }
 
     #toggle {
@@ -39,19 +40,16 @@
       text-align: center;
       width: 80%;
     }
-
-    .header {
+    
+    .sidebar-header {
+      font-size: 18px;
       font-weight: bold;
       margin-bottom: 10px;
     }
-
-    .language {
+    
+    .language-toggle {
       font-size: 14px;
-      margin-bottom: 5px;
-    }
-
-    .toggle-languages::before {
-      content: "↓";
+      cursor: pointer;
     }
   </style>
 </head>
@@ -61,12 +59,13 @@
   </div>
   
   <div id="sidebar">
-    <div class="header">Copyright info</div>
-    <div class="header toggle-languages" onclick="toggleLanguages()"> &lt; Languages</div>
-    <div id="languages" style="display: none;">
-      <div class="language">Espanol</div>
-      <div class="language">Francais</div>
-      <div class="language">Mandarin</div>
+    <div class="sidebar-header">Copyright info</div>
+    <div class="sidebar-header" id="language-toggle">&lt; Languages</div>
+    <div id="language-options" style="display: none;">
+      <p class="language-toggle">↓ Languages</p>
+      <p class="language-toggle">Espanol</p>
+      <p class="language-toggle">Francais</p>
+      <p class="language-toggle">Mandarian</p>
     </div>
   </div>
   
@@ -88,18 +87,19 @@
       document.getElementById("sidebar").style.display = "none";
       document.getElementById("toggle").style.display = "none";
     });
-
-    function toggleLanguages() {
-      var languagesElement = document.getElementById("languages");
-      var toggleLanguagesElement = document.querySelector(".toggle-languages");
-      if (languagesElement.style.display === "none") {
-        languagesElement.style.display = "block";
-        toggleLanguagesElement.innerHTML = "↓ Languages";
+    
+    document.getElementById("language-toggle").addEventListener("click", function() {
+      var languageOptions = document.getElementById("language-options");
+      var languageToggle = document.getElementById("language-toggle");
+      
+      if (languageOptions.style.display === "none") {
+        languageOptions.style.display = "block";
+        languageToggle.innerHTML = "↓ Languages";
       } else {
-        languagesElement.style.display = "none";
-        toggleLanguagesElement.innerHTML = "< Languages";
+        languageOptions.style.display = "none";
+        languageToggle.innerHTML = "&lt; Languages";
       }
-    }
+    });
   </script>
 </body>
 </html>
