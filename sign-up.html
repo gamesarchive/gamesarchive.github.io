@@ -1,0 +1,124 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <form id="signupForm">
+        <h2>Sign Up</h2>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <div id="usernameError" class="error-message"></div>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <div id="passwordError" class="error-message"></div>
+
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <script>
+        // Fetch the list of blacklisted words from the server
+        fetch('/blacklist')
+            .then(response => response.json())
+            .then(data => {
+                const blacklist = data.blacklist;
+
+                document.getElementById('signupForm').addEventListener('submit', function (event) {
+                    const usernameInput = document.getElementById('username');
+                    const usernameError = document.getElementById('usernameError');
+                    const usernameValue = usernameInput.value.toLowerCase();
+
+                    // Check if the username has 3 to 25 characters and contains only allowed characters
+                    if (usernameValue.length < 3 || usernameValue.length > 25 || !/^[a-zA-Z0-9_-]+$/.test(usernameValue)) {
+                        usernameError.textContent = "Usernames must include 3 or more characters, and cannot be more than 25. Usernames cannot have special characters except for underscores and hyphens.";
+                        event.preventDefault(); // Prevent form submission
+                    } else if (containsBlacklistedWord(usernameValue, blacklist)) {
+                        usernameError.textContent = "Certain words are not allowed in usernames. Make sure your username isn't inappropriate or offensive.";
+                        event.preventDefault(); // Prevent form submission
+                    } else {
+                        usernameError.textContent = ""; // Clear error message
+                    }
+
+                    const passwordInput = document.getElementById('password');
+                    const passwordError = document.getElementById('passwordError');
+                    const passwordValue = passwordInput.value;
+
+                    // Check if the password is at least 8 characters long and contains at least one number
+                    if (passwordValue.length < 8 || !/\d/.test(passwordValue)) {
+                        passwordError.textContent = "Please create a password that is unique and includes at least 8 characters and at least 1 number";
+                        event.preventDefault(); // Prevent form submission
+                    } else {
+                        passwordError.textContent = ""; // Clear error message
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching blacklist:', error));
+
+        // Function to check if a string contains any blacklisted word
+        function containsBlacklistedWord(str, blacklist) {
+            return blacklist.some(word => str.includes(word));
+        }
+    </script>
+
+</body>
+</html>
