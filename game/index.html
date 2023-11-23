@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50px; /* Adjust as needed */
+            height: 50px; /* Adjust as needed */
+        }
+    </style>
+</head>
+<body>
+
+<img id="player" src="resources/player.png" alt="Player">
+
+<script>
+    var player = document.getElementById('player');
+    var speed = 10; // Pixels per second
+    var deltaX = 0;
+    var deltaY = 0;
+    var keyState = {};
+
+    function keyDownHandler(e) {
+        keyState[e.key] = true;
+    }
+
+    function keyUpHandler(e) {
+        keyState[e.key] = false;
+    }
+
+    function updatePosition() {
+        if (keyState['ArrowUp'] || keyState['W']) {
+            deltaY = -speed;
+        } else if (keyState['ArrowDown'] || keyState['S']) {
+            deltaY = speed;
+        } else {
+            deltaY = 0;
+        }
+
+        if (keyState['ArrowLeft'] || keyState['A']) {
+            deltaX = -speed;
+        } else if (keyState['ArrowRight'] || keyState['D']) {
+            deltaX = speed;
+        } else {
+            deltaX = 0;
+        }
+
+        // Update the position of the player
+        var currentPosition = getComputedStyle(player);
+        var currentTop = parseInt(currentPosition.top);
+        var currentLeft = parseInt(currentPosition.left);
+
+        player.style.top = (currentTop + deltaY) + 'px';
+        player.style.left = (currentLeft + deltaX) + 'px';
+
+        // Request the next animation frame
+        requestAnimationFrame(updatePosition);
+    }
+
+    document.addEventListener('keydown', keyDownHandler);
+    document.addEventListener('keyup', keyUpHandler);
+
+    // Start updating the position
+    updatePosition();
+</script>
+
+</body>
+</html>
