@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    #image {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+    }
+
+    #sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 100vh;
+      background-color: grey;
+      display: none;
+      padding: 20px;
+    }
+
+    #toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      display: none;
+    }
+
+    #content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      width: 80%;
+    }
+    
+    .sidebar-header {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    
+    .language-toggle {
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="image">
+    <img src="https://logodix.com/logo/4858Copyright info89.jpg" width="40" height="40">
+  </div>
+  
+  <div id="sidebar">
+    <div class="sidebar-header"><a href="languages/copyright/english.html">Copyright</a></div>
+    <div class="sidebar-header" id="language-toggle">&lt; Languages</div>
+    <div id="language-options" style="display: none;">
+      <p class="language-toggle">↓ Languages</p>
+      <p class="language-toggle">Español</p>
+      <p class="language-toggle">Français</p>
+      <p class="language-toggle">普通话</p>
+    </div>
+  </div>
+  
+  <div id="toggle">&lt;</div>
+
+  <div id="content">
+    <p>GamesArchive distinguishes itself in the gaming industry not only for its exceptional game development but also for its commitment to responsible sharing of video game content while upholding stringent adherence to United States copyright laws. Striving to bring joy to a wide audience, GamesArchive adopts a conscientious approach in sharing its video games, ensuring that the distribution aligns with legal frameworks and respects the intellectual property rights of creators. The company employs robust measures to obtain the necessary permissions and licenses, fostering a culture of compliance and respect for copyright laws. By championing ethical game distribution practices, GamesArchive seeks to create a gaming community that values both accessibility and the protection of creative works.</p>
+  </div>
+  
+  <script>
+    document.getElementById("image").addEventListener("click", function() {
+      this.style.display = "none";
+      document.getElementById("sidebar").style.display = "block";
+      document.getElementById("toggle").style.display = "block";
+    });
+    
+    document.getElementById("toggle").addEventListener("click", function() {
+      document.getElementById("image").style.display = "block";
+      document.getElementById("sidebar").style.display = "none";
+      document.getElementById("toggle").style.display = "none";
+    });
+    
+    document.getElementById("language-toggle").addEventListener("click", function() {
+      var languageOptions = document.getElementById("language-options");
+      var languageToggle = document.getElementById("language-toggle");
+      
+      if (languageOptions.style.display === "none") {
+        languageOptions.style.display = "block";
+        languageToggle.innerHTML = "↓ Languages";
+      } else {
+        languageOptions.style.display = "none";
+        languageToggle.innerHTML = "&lt; Languages";
+      }
+    });
+  </script>
+</body>
+</html>
