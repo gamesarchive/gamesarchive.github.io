@@ -78,68 +78,11 @@
                     errorMessage = "403 DNS Server Location Denied Access";
                     break;
                 default:
-                    // If the user is not in any of the specified countries, execute the regular HTML script
-                    document.body.innerHTML = `
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <link rel="stylesheet" href="style.css">
-                            <style>
-                                /* Add your styles here */
-                            </style>
-                        </head>
-                        <body>
-                            <div id="image">
-                                <img src="https://logodix.com/logo/4858Copyright info89.jpg" width="40" height="40">
-                            </div>
-                            
-                            <div id="sidebar">
-                                <div class="sidebar-header"><a href="copyright.html">Copyright</a></div>
-                                <div class="sidebar-header" id="language-toggle">&lt; Languages</div>
-                                <div id="language-options" style="display: none;">
-                                    <p class="language-toggle">↓ Languages</p>
-                                    <p class="language-toggle">Español</p>
-                                    <p class="language-toggle">Français</p>
-                                    <p class="language-toggle">中文</p>
-                                </div>
-                            </div>
-                            
-                            <div id="toggle">&lt;</div>
-
-                            <div id="content">
-                                <p>Hello and welcome to the Games Archive! We are here to uphold the history and legacy of games from Pong to Five Nights at Freddy's! If you have any problems or copyright notices, please see the "Info" tab on the sidebar.</p>
-                            </div>
-                            
-                            <script>
-                                document.getElementById("image").addEventListener("click", function() {
-                                    this.style.display = "none";
-                                    document.getElementById("sidebar").style.display = "block";
-                                    document.getElementById("toggle").style.display = "block";
-                                });
-                                
-                                document.getElementById("toggle").addEventListener("click", function() {
-                                    document.getElementById("image").style.display = "block";
-                                    document.getElementById("sidebar").style.display = "none";
-                                    document.getElementById("toggle").style.display = "none";
-                                });
-                                
-                                document.getElementById("language-toggle").addEventListener("click", function() {
-                                    var languageOptions = document.getElementById("language-options");
-                                    var languageToggle = document.getElementById("language-toggle");
-                                    
-                                    if (languageOptions.style.display === "none") {
-                                        languageOptions.style.display = "block";
-                                        languageToggle.innerHTML = "↓ Languages";
-                                    } else {
-                                        languageOptions.style.display = "none";
-                                        languageToggle.innerHTML = "&lt; Languages";
-                                    }
-                                });
-                            </script>
-                        </body>
-                        </html>
-                    `;
+                    // If the user is not in any of the specified countries, display the 403 error message
+                    errorMessage = "403 Access Denied";
             }
+
+            document.body.innerHTML = "<p>" + errorMessage + "</p>";
         }
 
         // Call the function on page load
