@@ -1,105 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    #image {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      width: 40px;
-      height: 40px;
-    }
-
-    #sidebar {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 200px;
-      height: 100vh;
-      background-color: grey;
-      display: none;
-      padding: 20px;
-    }
-
-    #toggle {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-      display: none;
-    }
-
-    #content {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      width: 80%;
-    }
-    
-    .sidebar-header {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    
-    .language-toggle {
-      font-size: 14px;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Access Denied</title>
+    <style>
+        /* Add your styles here */
+    </style>
 </head>
 <body>
-  <div id="image">
-    <img src="https://logodix.com/logo/4858Copyright info89.jpg" width="40" height="40">
-  </div>
-  
-  <div id="sidebar">
-    <div class="sidebar-header"><a href="copyright.html">Copyright</a></div>
-    <div class="sidebar-header" id="language-toggle">&lt; Languages</div>
-    <div id="language-options" style="display: none;">
-      <p class="language-toggle">↓ Languages</p>
-      <p class="language-toggle">Español</p>
-      <p class="language-toggle">Français</p>
-      <p class="language-toggle">中文</p>
-    </div>
-  </div>
-  
-  <div id="toggle">&lt;</div>
+    <script>
+        // Function to get user's location based on IP using ipinfo.io API
+        function getUserLocation() {
+            fetch('https://ipinfo.io/json')
+                .then(response => response.json())
+                .then(data => {
+                    var userLocation = data.country; // Adjust for provinces if needed
+                    setErrorMessage(userLocation);
+                })
+                .catch(error => {
+                    console.error('Error fetching IP information:', error);
+                    // Default to a generic message if there's an error
+                    setErrorMessage();
+                });
+        }
 
-  <div id="content">
-    <p>Hello and welcome to the Games Archive! We are here to uphold the history and legacy of games from Pong to Five Nights at Freddy's! If you have any problems or copyright notices, please see the "Info" tab on the sidebar.</p>
-  </div>
-  
-  <script>
-    document.getElementById("image").addEventListener("click", function() {
-      this.style.display = "none";
-      document.getElementById("sidebar").style.display = "block";
-      document.getElementById("toggle").style.display = "block";
-    });
-    
-    document.getElementById("toggle").addEventListener("click", function() {
-      document.getElementById("image").style.display = "block";
-      document.getElementById("sidebar").style.display = "none";
-      document.getElementById("toggle").style.display = "none";
-    });
-    
-    document.getElementById("language-toggle").addEventListener("click", function() {
-      var languageOptions = document.getElementById("language-options");
-      var languageToggle = document.getElementById("language-toggle");
-      
-      if (languageOptions.style.display === "none") {
-        languageOptions.style.display = "block";
-        languageToggle.innerHTML = "↓ Languages";
-      } else {
-        languageOptions.style.display = "none";
-        languageToggle.innerHTML = "&lt; Languages";
-      }
-    });
-  </script>
+        // Function to set the appropriate message based on user's location
+        function setErrorMessage(location) {
+            var errorMessage = "";
+
+            switch (location) {
+                case "US":
+                    errorMessage = "403 DNS Server Location Denied Access";
+                    break;
+                case "SA":
+                case "PS":
+                case "JO":
+                case "LB":
+                case "SY":
+                case "TR":
+                case "IQ":
+                case "KW":
+                case "QA":
+                case "YE":
+                case "OM":
+                case "AE":
+                    errorMessage = "403 تم رفض الوصول إلى موقع خادم DNS";
+                    break;
+                case "AF":
+                    errorMessage = "د 403 DNS سرور ځای د لاسرسي منع دی";
+                    break;
+                case "PH":
+                    errorMessage = "403 DNS Server Location Tinanggihan ang Access";
+                    break;
+                case "AR":
+                case "NI":
+                case "CR":
+                case "SV":
+                case "GT":
+                case "HN":
+                case "VE":
+                case "CU":
+                case "DO":
+                case "UY":
+                case "GQ":
+                case "PA":
+                case "JM":
+                case "BZ":
+                    errorMessage = "403 Ubicación del servidor DNS Acceso denegado";
+                    break;
+                case "AU":
+                case "NZ":
+                case "NG":
+                case "LR":
+                case "JM":
+                case "BZ":
+                    errorMessage = "403 DNS Server Location Denied Access";
+                    break;
+                default:
+                    // If the user is not in any of the specified countries, execute the regular HTML script
+                    document.body.innerHTML = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <link rel="stylesheet" href="style.css">
+                            <style>
+                                /* Add your styles here */
+                            </style>
+                        </head>
+                        <body>
+                            <div id="image">
+                                <img src="https://logodix.com/logo/4858Copyright info89.jpg" width="40" height="40">
+                            </div>
+                            
+                            <div id="sidebar">
+                                <div class="sidebar-header"><a href="copyright.html">Copyright</a></div>
+                                <div class="sidebar-header" id="language-toggle">&lt; Languages</div>
+                                <div id="language-options" style="display: none;">
+                                    <p class="language-toggle">↓ Languages</p>
+                                    <p class="language-toggle">Español</p>
+                                    <p class="language-toggle">Français</p>
+                                    <p class="language-toggle">中文</p>
+                                </div>
+                            </div>
+                            
+                            <div id="toggle">&lt;</div>
+
+                            <div id="content">
+                                <p>Hello and welcome to the Games Archive! We are here to uphold the history and legacy of games from Pong to Five Nights at Freddy's! If you have any problems or copyright notices, please see the "Info" tab on the sidebar.</p>
+                            </div>
+                            
+                            <script>
+                                document.getElementById("image").addEventListener("click", function() {
+                                    this.style.display = "none";
+                                    document.getElementById("sidebar").style.display = "block";
+                                    document.getElementById("toggle").style.display = "block";
+                                });
+                                
+                                document.getElementById("toggle").addEventListener("click", function() {
+                                    document.getElementById("image").style.display = "block";
+                                    document.getElementById("sidebar").style.display = "none";
+                                    document.getElementById("toggle").style.display = "none";
+                                });
+                                
+                                document.getElementById("language-toggle").addEventListener("click", function() {
+                                    var languageOptions = document.getElementById("language-options");
+                                    var languageToggle = document.getElementById("language-toggle");
+                                    
+                                    if (languageOptions.style.display === "none") {
+                                        languageOptions.style.display = "block";
+                                        languageToggle.innerHTML = "↓ Languages";
+                                    } else {
+                                        languageOptions.style.display = "none";
+                                        languageToggle.innerHTML = "&lt; Languages";
+                                    }
+                                });
+                            </script>
+                        </body>
+                        </html>
+                    `;
+            }
+        }
+
+        // Call the function on page load
+        window.onload = getUserLocation;
+    </script>
 </body>
 </html>
