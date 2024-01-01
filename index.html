@@ -78,6 +78,12 @@
                 case "PH":
                     errorMessage = "Error 403, ang Access ay ibinawal dahil sa mga batas sa Pilipinas na nagbabawal sa paggamit ng website na ito";
                     break;
+                case "TW":
+                    errorMessage = "由于台湾的法律禁止使用此网站，因此访问被阻止。";
+                    break;
+                case "KZ":
+                    errorMessage = "Бұл веб-сайтты пайдалану өтініштерді қолдануға тиесілі Қазақстандық құқықтар себебімен тыйым салу болды.";
+                    break;
                 case "AR":
                     errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Argentina que prohíben el uso de este sitio web";
                     break;
@@ -121,12 +127,22 @@
                     errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Belice que prohíben el uso de este sitio web";
                     break;
                 case "AU":
+                    errorMessage = "Error 403, access is blocked due to laws in Australia that bar use of this website";
+                    break;
                 case "NZ":
+                    errorMessage = "Error 403, access is blocked due to laws in New Zealand that bar use of this website";
+                    break;
                 case "NG":
+                    errorMessage = "Error 403, access is blocked due to laws in Nigeria that bar use of this website";
+                    break;
                 case "LR":
+                    errorMessage = "Error 403, access is blocked due to laws in Liberia that bar use of this website";
+                    break;
                 case "JM":
+                    errorMessage = "Error 403, access is blocked due to laws in Jamaica that bar use of this website";
+                    break;
                 case "BZ":
-                    errorMessage = "Error 403, access is blocked due to laws in " + location + " that bar use of this website";
+                    errorMessage = "Error 403, access is blocked due to laws in Belize that bar use of this website";
                     break;
                 default:
                     // If the user is not in any of the specified countries, display the generic 403 error message
