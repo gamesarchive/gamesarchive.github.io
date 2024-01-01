@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>403 Access Denied</title>
+    <title>Error 403 Access Denied</title>
     <style>
         /* Add your styles here */
     </style>
@@ -31,43 +31,94 @@
 
             switch (location) {
                 case "US":
-                    errorMessage = "403 DNS Server Location Denied Access";
+                    errorMessage = "Error 403, access is blocked due to laws in the United States that bar use of this website";
+                    break;
+                case "CA":
+                    errorMessage = "Error 403, access is blocked due to laws in Canada that bar use of this website";
                     break;
                 case "SA":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في المملكة العربية السعودية التي تمنع استخدام هذا الموقع";
+                    break;
                 case "PS":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في فلسطين التي تمنع استخدام هذا الموقع";
+                    break;
                 case "JO":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في الأردن التي تمنع استخدام هذا الموقع";
+                    break;
                 case "LB":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في لبنان التي تمنع استخدام هذا الموقع";
+                    break;
                 case "SY":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في سوريا التي تمنع استخدام هذا الموقع";
+                    break;
                 case "TR":
+                    errorMessage = "Error 403, Türkiye'de kullanımını yasaklayan yasalara dayanarak erişim engellendi";
+                    break;
                 case "IQ":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في العراق التي تمنع استخدام هذا الموقع";
+                    break;
                 case "KW":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في الكويت التي تمنع استخدام هذا الموقع";
+                    break;
                 case "QA":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في قطر التي تمنع استخدام هذا الموقع";
+                    break;
                 case "YE":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في اليمن التي تمنع استخدام هذا الموقع";
+                    break;
                 case "OM":
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في عمان التي تمنع استخدام هذا الموقع";
+                    break;
                 case "AE":
-                    errorMessage = "٤٠٣ تم رفض الوصول إلى موقع خادم DNS";
+                    errorMessage = "Error 403, الوصول محظور بسبب القوانين في الإمارات العربية المتحدة التي تمنع استخدام هذا الموقع";
                     break;
                 case "AF":
-                    errorMessage = "د ۴۰۳ DNS سرور ځای د لاسرسي منع دی";
+                    errorMessage = "Error 403, د ځای سرور لاسرسي منع دی به عنوان لوایح توسط افغانستان";
                     break;
                 case "PH":
-                    errorMessage = "403 DNS Server Location Tinanggihan ang Access";
+                    errorMessage = "Error 403, ang Access ay ibinawal dahil sa mga batas sa Pilipinas na nagbabawal sa paggamit ng website na ito";
                     break;
                 case "AR":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Argentina que prohíben el uso de este sitio web";
+                    break;
                 case "NI":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Nicaragua que prohíben el uso de este sitio web";
+                    break;
                 case "CR":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Costa Rica que prohíben el uso de este sitio web";
+                    break;
                 case "SV":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en El Salvador que prohíben el uso de este sitio web";
+                    break;
                 case "GT":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Guatemala que prohíben el uso de este sitio web";
+                    break;
                 case "HN":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Honduras que prohíben el uso de este sitio web";
+                    break;
                 case "VE":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Venezuela que prohíben el uso de este sitio web";
+                    break;
                 case "CU":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Cuba que prohíben el uso de este sitio web";
+                    break;
                 case "DO":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en la República Dominicana que prohíben el uso de este sitio web";
+                    break;
                 case "UY":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Uruguay que prohíben el uso de este sitio web";
+                    break;
                 case "GQ":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Guinea Ecuatorial que prohíben el uso de este sitio web";
+                    break;
                 case "PA":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Panamá que prohíben el uso de este sitio web";
+                    break;
                 case "JM":
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Jamaica que prohíben el uso de este sitio web";
+                    break;
                 case "BZ":
-                    errorMessage = "403 Ubicación del servidor DNS Acceso denegado";
+                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Belice que prohíben el uso de este sitio web";
                     break;
                 case "AU":
                 case "NZ":
@@ -75,11 +126,11 @@
                 case "LR":
                 case "JM":
                 case "BZ":
-                    errorMessage = "403 DNS Server Location Denied Access";
+                    errorMessage = "Error 403, access is blocked due to laws in " + location + " that bar use of this website";
                     break;
                 default:
-                    // If the user is not in any of the specified countries, display the 403 error message
-                    errorMessage = "403 Access Denied";
+                    // If the user is not in any of the specified countries, display the generic 403 error message
+                    errorMessage = "Error 403 Access Denied";
             }
 
             document.body.innerHTML = "<p>" + errorMessage + "</p>";
