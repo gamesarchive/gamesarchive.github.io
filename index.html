@@ -177,9 +177,6 @@
                 case "PA":
                     errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Panamá que prohíben el uso de este sitio web";
                     break;
-                case "JM":
-                    errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Jamaica que prohíben el uso de este sitio web";
-                    break;
                 case "BZ":
                     errorMessage = "Error 403, el acceso está bloqueado debido a las leyes en Belice que prohíben el uso de este sitio web";
                     break;
@@ -198,34 +195,34 @@
                 case "JM":
                     errorMessage = "Error 403, access is blocked due to laws in Jamaica that bar use of this website";
                     break;
-                default:
-                    document.body.innerHTML = "<div id='content'>" +
-                        "<p>Welcome to the games archive! Where we have free games for download for entertainment and history purposes. These include games for Windows PC and web games as well.</p>" +
-                        "<img src='images/change.svg' width='50' height='50' id='image'>" +
-                        "</div>" +
-                        "<div id='sidebar'>" +
-                        "<button onclick='redirectToWindows()'>Windows</button>" +
-                        "<button onclick='redirectToFlashWeb()'>Flash/Web</button>" +
-                        "<button onclick='redirectToSignUp()'>Sign Up</button>" +
-                        "<button onclick='redirectToLogin()'>Login</button>" +
-                        "</div>" +
-                        "<script>" +
-                        "document.getElementById('image').addEventListener('click', function() {" +
-                        "document.getElementById('sidebar').style.display = 'block';" +
-                        "});" +
-                        "function redirectToWindows() {" +
-                        "window.location.href = '/other/windows.html';" +
-                        "}" +
-                        "function redirectToFlashWeb() {" +
-                        "window.location.href = '/other/flash-web.html';" +
-                        "}" +
-                        "function redirectToSignUp() {" +
-                        "window.location.href = '/sign-ups.html';" +
-                        "}" +
-                        "function redirectToLogin() {" +
-                        "window.location.href = '/login.html';" +
-                        "}" +
-                        "</script>";
+default:
+    document.body.innerHTML = "<div id='content'>" +
+        "<p>Welcome to the games archive! Where we have free games for download for entertainment and history purposes. These include games for Windows PC and web games as well.</p>" +
+        "<img src='images/change.svg' width='50' height='50' id='image'>" +
+        "</div>" +
+        "<div id='sidebar'>" +
+        "<button onclick='redirectToWindows()'>Windows</button>" +
+        "<button onclick='redirectToFlashWeb()'>Flash/Web</button>" +
+        "<button onclick='redirectToSignUp()'>Sign Up</button>" +
+        "<button onclick='redirectToLogin()'>Login</button>" +
+        "</div>" +
+        "<script>" +
+        "document.getElementById('image').addEventListener('click', function() {" +
+        "document.getElementById('sidebar').style.display = 'block';" +
+        "});" +
+        "function redirectToWindows() {" +
+        "window.location.href = '/other/windows.html';" +
+        "}" +
+        "function redirectToFlashWeb() {" +
+        "window.location.href = '/other/flash-web.html';" +
+        "}" +
+        "function redirectToSignUp() {" +
+        "window.location.href = '/sign-ups.html';" +
+        "}" +
+        "function redirectToLogin() {" +
+        "window.location.href = '/login.html';" +
+        "}" +
+        "</script>";
             }
     }    
         // Call the function on page load
