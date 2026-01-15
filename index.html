@@ -4,29 +4,13 @@
 <meta charset="UTF-8">
 <title>MS-DOS</title>
 <style>
-* {
-  user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
+*{user-select:none}
+body{
+ margin:0;background:black;color:#fff;
+ font-family:"Courier New",monospace;font-size:16px
 }
-body {
-  margin: 0;
-  background: black;
-  color: #ffffff;
-  font-family: "Courier New", monospace;
-  font-size: 16px;
-}
-#screen {
-  padding: 10px;
-  white-space: pre-wrap;
-  outline: none;
-}
-.bsod {
-  background: #0000aa;
-  color: white;
-  padding: 12px;
-}
-.hidden { display: none; }
+#screen{padding:10px;white-space:pre-wrap}
+.bsod{background:#0000aa;color:white;padding:12px}
 </style>
 </head>
 
@@ -34,112 +18,101 @@ body {
 <div id="screen"></div>
 
 <script>
-/* ===================== IMMERSION LOCK ===================== */
-
-document.addEventListener("contextmenu", e => e.preventDefault());
+/* ================= IMMERSION ================= */
 document.body.focus();
+document.addEventListener("contextmenu",e=>e.preventDefault());
 document.body.addEventListener("blur",()=>document.body.focus());
 
-/* ===================== CORE STATE ===================== */
-
-const screen = document.getElementById("screen");
-let HALTED=false, INPUT="", READY=false;
+/* ================= SYSTEM STATE ================= */
+const screen=document.getElementById("screen");
+let HALTED=false,READY=false,INPUT="";
+let CMOS_OK=Math.random()>0.2;
 
 const CPU={
- AX:0,BX:0,CX:0,DX:0,SI:0,DI:0,BP:0,SP:0,
- CS:0x1000,IP:0x0000,DS:0x2000,ES:0x2000,SS:0x3000,
- FLAGS:0,MODE:"real",PAGING:false,V86:false
+ CS:0x1000,IP:0,DS:0x2000,ES:0x2000,
+ MODE:"real",RAM:{conv:640,upper:384,high:0},
 };
 
-const PORTS={}, TSR=[];
+let BOOT_ORDER=["A:","C:"];
 
-/* ===================== FILE SYSTEM ===================== */
-
-const FS={
- "C:":{type:"dir",children:{
-  "CONFIG.SYS":{type:"file",content:"DEVICE=HIMEM.SYS\nDOS=HIGH"},
-  "AUTOEXEC.BAT":{type:"file",content:"ECHO Booting MS-DOS...\nTSR CLOCK\nCLS"},
+/* ================= FILE SYSTEM ================= */
+let FS={
+ "A:":{bootable:false,type:"dir",children:{}},
+ "C:":{bootable:true,type:"dir",children:{
+  "CONFIG.SYS":{type:"file",content:"DOS=HIGH"},
+  "AUTOEXEC.BAT":{type:"file",content:"ECHO Booting MS-DOS...\nCLS"},
   "COMMAND.COM":{type:"file",content:""}
  }}
 };
+
 let cwd=["C:"];
 
 function getDir(p=cwd){
  let n=FS; for(const x of p) n=n[x].children; return n;
 }
 
-/* ===================== OUTPUT ===================== */
-
+/* ================= OUTPUT ================= */
 function out(t=""){
  if(HALTED) return;
  screen.innerHTML+=t+"\n";
- scroll();
+ window.scrollTo(0,document.body.scrollHeight);
 }
-function scroll(){ window.scrollTo(0,document.body.scrollHeight); }
-function hex(v){return "0x"+v.toString(16).toUpperCase();}
 
-/* ===================== POST / BIOS ===================== */
-
+/* ================= POST ================= */
 function POST(){
  screen.innerHTML="";
- const lines=[
-  "PhoenixBIOS 4.0 Release 6.0",
-  "Copyright 1985-1998 Phoenix Technologies Ltd.",
-  "",
-  "CPU = Intel(R) 80486DX",
-  "Checking RAM: 640K OK",
-  "Detecting IDE Drives ... OK",
-  "Keyboard detected",
-  "",
-  "Press DEL to enter SETUP",
-  ""
- ];
- let i=0;
- const timer=setInterval(()=>{
-  out(lines[i++]||"");
-  if(i>=lines.length){ clearInterval(timer); setTimeout(bootDOS,1200); }
- },350);
+ out("PhoenixBIOS 4.0 Release 6.0");
+ out("Copyright 1985-1998 Phoenix Technologies Ltd.");
+ out("");
+ if(!CMOS_OK){
+  out("CMOS checksum error - Defaults loaded");
+ }
+ out("Checking RAM: "+CPU.RAM.conv+"K OK");
+ out("Detecting Floppy Drive A: ... "+(FS["A:"].bootable?"OK":"None"));
+ out("Detecting IDE Drive C: ... OK");
+ out("");
+ setTimeout(bootLoader,1200);
 }
 
-/* ===================== BOOT ===================== */
+/* ================= BOOT LOADER ================= */
+function bootLoader(){
+ for(const dev of BOOT_ORDER){
+  if(FS[dev]?.bootable){
+   if(dev==="A:"&&!FS["A:"].children["IO.SYS"]){
+    out("Non-System disk or disk error");
+    out("Replace and press any key");
+    READY=false; return;
+   }
+   bootDOS(dev);
+   return;
+  }
+ }
+ out("Missing operating system");
+}
 
-function bootDOS(){
+function bootDOS(dev){
  screen.innerHTML="";
  out("Starting MS-DOS...");
- parseConfig();
+ runConfig();
  runAutoexec();
  prompt();
  READY=true;
 }
 
-/* ===================== CONFIG / AUTOEXEC ===================== */
-
-function parseConfig(){
+/* ================= CONFIG / AUTOEXEC ================= */
+function runConfig(){
  const cfg=FS["C:"].children["CONFIG.SYS"].content.split("\n");
- for(const l of cfg){
-  if(l.startsWith("DEVICE=")) out("Loading "+l.split("=")[1]);
-  if(l==="DOS=HIGH"){ CPU.MODE="protected"; CPU.PAGING=true; }
- }
+ cfg.forEach(l=>{
+  if(l==="DOS=HIGH"){CPU.MODE="protected";CPU.RAM.high=64;}
+ });
 }
 
 function runAutoexec(){
- const bat=FS["C:"].children["AUTOEXEC.BAT"].content.split("\n");
- for(const c of bat) exec(c);
+ FS["C:"].children["AUTOEXEC.BAT"].content
+ .split("\n").forEach(exec);
 }
 
-/* ===================== TSR ===================== */
-
-function loadTSR(n){
- if(n==="CLOCK"){
-  TSR.unshift(i=>{
-   if(i===0x1C) out("[CLOCK] "+new Date().toLocaleTimeString());
-  });
-  out("Resident CLOCK loaded");
- }
-}
-
-/* ===================== COMMAND EXEC ===================== */
-
+/* ================= COMMANDS ================= */
 function exec(line){
  const a=line.trim().split(/\s+/);
  const c=a[0]?.toUpperCase();
@@ -152,43 +125,69 @@ function exec(line){
     out((dir[k].type==="dir"?"<DIR> ":"      ")+k);
    break;
 
-  case "CD":
-   if(a[1]===".."){ if(cwd.length>1) cwd.pop(); }
-   else if(dir[a[1]]?.type==="dir") cwd.push(a[1]);
-   else out("Path not found");
+  case "MEM":
+   out("Conventional Memory: "+CPU.RAM.conv+"K");
+   out("Upper Memory: "+CPU.RAM.upper+"K");
+   out("High Memory: "+CPU.RAM.high+"K");
    break;
 
-  case "TYPE":
-   dir[a[1]]?.type==="file"
-    ? out(dir[a[1]].content)
-    : out("File not found");
+  case "FORMAT":
+   if(a[1]==="C:"){
+    out("WARNING, ALL DATA ON NON-REMOVABLE DISK");
+    out("DRIVE C: WILL BE LOST!");
+    out("Proceed with Format (Y/N)?");
+    HALTED=true;
+    document.onkeydown=e=>{
+     if(e.key.toUpperCase()==="Y"){
+      FS["C:"].children={};
+      HALTED=false;
+      out("Formatting complete.");
+      prompt();
+     }
+    };
+    return;
+   }
    break;
 
-  case "DEL":
-   dir[a[1]] ? delete dir[a[1]] : out("File not found");
+  case "FDISK":
+   out("Fixed Disk Setup Program");
+   out("No changes made.");
    break;
 
-  case "COPY":
-   if(dir[a[1]]?.type==="file"){
-    dir[a[2]]={type:"file",content:dir[a[1]].content};
-    out("1 file(s) copied.");
-   } else out("File not found");
+  case "SYS":
+   if(a[1]==="C:"){
+    FS["C:"].children["IO.SYS"]={type:"file",content:""};
+    FS["C:"].children["MSDOS.SYS"]={type:"file",content:""};
+    FS["C:"].bootable=true;
+    out("System transferred.");
+   }
    break;
 
-  case "MKDIR": dir[a[1]]={type:"dir",children:{}}; break;
-  case "RMDIR": dir[a[1]]?.type==="dir" ? delete dir[a[1]] : out("Directory not found"); break;
-  case "ECHO": out(a.slice(1).join(" ")); break;
-  case "CLS": screen.innerHTML=""; break;
-  case "TSR": loadTSR(a[1]); break;
-  case "CRASH": crash("Manual crash"); return;
+  case "VER":
+   out("MS-DOS Version 6.22");
+   break;
 
-  default: out("Bad command or file name");
+  case "DATE":
+   out(new Date().toLocaleDateString());
+   break;
+
+  case "TIME":
+   out(new Date().toLocaleTimeString());
+   break;
+
+  case "CLS":
+   screen.innerHTML=""; break;
+
+  case "ECHO":
+   out(a.slice(1).join(" ")); break;
+
+  default:
+   out("Bad command or file name");
  }
  prompt();
 }
 
-/* ===================== PROMPT / INPUT ===================== */
-
+/* ================= INPUT ================= */
 function prompt(){
  out(cwd.join("\\")+">"+INPUT);
 }
@@ -210,29 +209,7 @@ document.addEventListener("keydown",e=>{
  }
 });
 
-/* ===================== BSOD ===================== */
-
-function crash(reason){
- HALTED=true;
- screen.innerHTML=
-`<div class="bsod">
-A problem has been detected and DOS has been shut down.
-
-${reason}
-
-CS:${hex(CPU.CS)} IP:${hex(CPU.IP)}
-DS:${hex(CPU.DS)} ES:${hex(CPU.ES)}
-
-Press Reset to restart your computer.
-</div>`;
-}
-
-/* ===================== TIMER ===================== */
-
-setInterval(()=>TSR.forEach(t=>t(0x1C)),3000);
-
-/* ===================== START ===================== */
-
+/* ================= START ================= */
 POST();
 </script>
 </body>
