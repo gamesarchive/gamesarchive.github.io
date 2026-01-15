@@ -6,11 +6,21 @@
 <style>
 *{user-select:none}
 body{
- margin:0;background:black;color:#fff;
- font-family:"Courier New",monospace;font-size:16px
+  margin:0;
+  background:black;
+  color:white;
+  font-family:"Courier New",monospace;
+  font-size:16px;
 }
-#screen{padding:10px;white-space:pre-wrap}
-.bsod{background:#0000aa;color:white;padding:12px}
+#screen{
+  padding:10px;
+  white-space:pre-wrap;
+}
+.bsod{
+  background:#0000aa;
+  color:white;
+  padding:12px;
+}
 </style>
 </head>
 
@@ -23,191 +33,291 @@ document.body.focus();
 document.addEventListener("contextmenu",e=>e.preventDefault());
 document.body.addEventListener("blur",()=>document.body.focus());
 
-/* ================= SYSTEM STATE ================= */
+/* ================= CORE STATE ================= */
 const screen=document.getElementById("screen");
-let HALTED=false,READY=false,INPUT="";
-let CMOS_OK=Math.random()>0.2;
+let INPUT="", READY=false, HALTED=false;
+let BASIC_MODE=false;
+let cwd=["C:"];
 
-const CPU={
- CS:0x1000,IP:0,DS:0x2000,ES:0x2000,
- MODE:"real",RAM:{conv:640,upper:384,high:0},
-};
-
-let BOOT_ORDER=["A:","C:"];
+/* ================= CPU / MEMORY ================= */
+const CPU={ MODE:"real" };
 
 /* ================= FILE SYSTEM ================= */
-let FS={
- "A:":{bootable:false,type:"dir",children:{}},
- "C:":{bootable:true,type:"dir",children:{
+const FS={
+ "C:":{type:"dir",children:{
   "CONFIG.SYS":{type:"file",content:"DOS=HIGH"},
   "AUTOEXEC.BAT":{type:"file",content:"ECHO Booting MS-DOS...\nCLS"},
   "COMMAND.COM":{type:"file",content:""}
- }}
+ }},
+ "A:":{type:"dir",volume:"FLOPPY",serial:0x1A2B,children:{
+  "HELLO.TXT":{type:"file",content:"Hello from floppy disk."},
+  "README.TXT":{type:"file",content:"Use DIR to list files."}
+ }},
+ "B:":{type:"dir",volume:"FLOPPY2",serial:0x2B3C,children:{}}
 };
 
-let cwd=["C:"];
-
-function getDir(p=cwd){
- let n=FS; for(const x of p) n=n[x].children; return n;
+function getDir(){ 
+ let n=FS;
+ for(const p of cwd) n=n[p].children;
+ return n;
 }
 
 /* ================= OUTPUT ================= */
-function out(t=""){
- if(HALTED) return;
- screen.innerHTML+=t+"\n";
- window.scrollTo(0,document.body.scrollHeight);
+function clear(){ screen.innerHTML=""; }
+function write(t){ screen.innerHTML+=t; scroll(); }
+function writeln(t=""){ write(t+"\n"); }
+function scroll(){ window.scrollTo(0,document.body.scrollHeight); }
+
+/* ================= PC SPEAKER ================= */
+function beep(){
+ try{
+  const ctx=new AudioContext();
+  const osc=ctx.createOscillator();
+  osc.type="square";
+  osc.frequency.value=880;
+  osc.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime+0.08);
+ }catch{}
 }
 
 /* ================= POST ================= */
-function POST(){
- screen.innerHTML="";
- out("PhoenixBIOS 4.0 Release 6.0");
- out("Copyright 1985-1998 Phoenix Technologies Ltd.");
- out("");
- if(!CMOS_OK){
-  out("CMOS checksum error - Defaults loaded");
+async function POST(){
+ clear();
+ writeln("PhoenixBIOS 4.0 Release 6.0");
+ writeln("Copyright 1985-1998 Phoenix Technologies Ltd.");
+ writeln("");
+ await delay(400);
+
+ writeln("CPU = Intel(R) 80486DX");
+ await delay(300);
+
+ for(let m=0;m<=640;m+=128){
+  write(`Checking RAM: ${m}K\r`);
+  await delay(120);
  }
- out("Checking RAM: "+CPU.RAM.conv+"K OK");
- out("Detecting Floppy Drive A: ... "+(FS["A:"].bootable?"OK":"None"));
- out("Detecting IDE Drive C: ... OK");
- out("");
- setTimeout(bootLoader,1200);
+ writeln("Checking RAM: 640K OK");
+
+ writeln("Detecting IDE Primary Master ... OK");
+ writeln("Detecting Floppy Drive A: ... OK");
+ await delay(400);
+
+ beep();
+ await delay(600);
+
+ // Critical file check
+ if(!FS["C:"].children["COMMAND.COM"]){
+  writeln("\nCritical system file COMMAND.COM missing!");
+  writeln("System halted.");
+  HALTED=true;
+  return;
+ }
+
+ bootDOS();
 }
 
-/* ================= BOOT LOADER ================= */
-function bootLoader(){
- for(const dev of BOOT_ORDER){
-  if(FS[dev]?.bootable){
-   if(dev==="A:"&&!FS["A:"].children["IO.SYS"]){
-    out("Non-System disk or disk error");
-    out("Replace and press any key");
-    READY=false; return;
-   }
-   bootDOS(dev);
-   return;
-  }
- }
- out("Missing operating system");
-}
-
-function bootDOS(dev){
- screen.innerHTML="";
- out("Starting MS-DOS...");
- runConfig();
- runAutoexec();
- prompt();
+/* ================= BOOT ================= */
+function bootDOS(){
+ clear();
+ writeln("Starting MS-DOS...");
+ writeln("");
+ writeln("Command v4.00");
+ writeln("Copyright (C) 1981-1985 Microsoft Corp.");
+ writeln("");
  READY=true;
+ prompt();
 }
 
-/* ================= CONFIG / AUTOEXEC ================= */
-function runConfig(){
- const cfg=FS["C:"].children["CONFIG.SYS"].content.split("\n");
- cfg.forEach(l=>{
-  if(l==="DOS=HIGH"){CPU.MODE="protected";CPU.RAM.high=64;}
- });
+/* ================= PROMPT ================= */
+function prompt(){
+ write(cwd.join("\\")+">"+INPUT);
 }
 
-function runAutoexec(){
- FS["C:"].children["AUTOEXEC.BAT"].content
- .split("\n").forEach(exec);
-}
-
-/* ================= COMMANDS ================= */
-function exec(line){
- const a=line.trim().split(/\s+/);
+/* ================= COMMAND EXEC ================= */
+function exec(cmd){
+ const a=cmd.trim().split(/\s+/);
  const c=a[0]?.toUpperCase();
  const dir=getDir();
 
+ if(BASIC_MODE){
+  if(c==="EXIT"){ BASIC_MODE=false; writeln("\nOk"); }
+  else writeln("Syntax error");
+  return;
+ }
+
  switch(c){
-  case "DIR":
-   out(" Directory of "+cwd.join("\\"));
-   for(const k in dir)
-    out((dir[k].type==="dir"?"<DIR> ":"      ")+k);
+
+  case "HELP":
+   writeln("For more information on a specific command, type HELP command-name");
+   writeln("DIR CD TREE COPY DEL TYPE CLS VER DATE TIME");
+   writeln("APPEND ASSIGN ATTRIB BACKUP RESTORE BASIC");
+   writeln("FORMAT VOL CHKDSK DISKCOPY REBOOT SHUTDOWN");
    break;
 
-  case "MEM":
-   out("Conventional Memory: "+CPU.RAM.conv+"K");
-   out("Upper Memory: "+CPU.RAM.upper+"K");
-   out("High Memory: "+CPU.RAM.high+"K");
+  case "CLS": clear(); break;
+
+  case "VER": writeln("MS-DOS Version 4.00"); break;
+
+  case "DIR":
+   {
+    let drive=cwd[0]; if(a[1]) drive=a[1].toUpperCase();
+    if(!FS[drive]){ writeln("Drive not found"); break; }
+    const d=FS[drive].children;
+    writeln(` Volume in drive ${drive} is ${FS[drive].volume||"NO NAME"}`);
+    writeln(" Directory of "+drive);
+    for(const f in d){
+     const info=d[f];
+     writeln((info.type==="dir"? "<DIR> ":"      ")+f);
+    }
+   }
+   break;
+
+  case "VOL":
+   {
+    let drive=cwd[0]; if(a[1]) drive=a[1].toUpperCase();
+    if(!FS[drive]){ writeln("Drive not found"); break; }
+    writeln(` Volume in drive ${drive} is ${FS[drive].volume||"NO NAME"}`);
+    writeln(` Volume Serial Number is ${FS[drive].serial.toString(16).toUpperCase()}`);
+   }
    break;
 
   case "FORMAT":
-   if(a[1]==="C:"){
-    out("WARNING, ALL DATA ON NON-REMOVABLE DISK");
-    out("DRIVE C: WILL BE LOST!");
-    out("Proceed with Format (Y/N)?");
+   {
+    let drive=cwd[0]; if(a[1]) drive=a[1].toUpperCase();
+    if(!FS[drive]){ writeln("Drive not found"); break; }
+    writeln(`Insert new diskette in drive ${drive} and press ENTER`);
     HALTED=true;
     document.onkeydown=e=>{
-     if(e.key.toUpperCase()==="Y"){
-      FS["C:"].children={};
-      HALTED=false;
-      out("Formatting complete.");
-      prompt();
-     }
+      if(e.key==="Enter"){
+        FS[drive].children={};
+        FS[drive].volume="NEWVOL";
+        FS[drive].serial=Math.floor(Math.random()*0xFFFF);
+        HALTED=false;
+        writeln(`Drive ${drive} formatted.`);
+        prompt();
+      }
     };
-    return;
    }
    break;
 
-  case "FDISK":
-   out("Fixed Disk Setup Program");
-   out("No changes made.");
-   break;
-
-  case "SYS":
-   if(a[1]==="C:"){
-    FS["C:"].children["IO.SYS"]={type:"file",content:""};
-    FS["C:"].children["MSDOS.SYS"]={type:"file",content:""};
-    FS["C:"].bootable=true;
-    out("System transferred.");
+  case "CHKDSK":
+   {
+    let drive=cwd[0]; if(a[1]) drive=a[1].toUpperCase();
+    if(!FS[drive]){ writeln("Drive not found"); break; }
+    writeln(`Checking disk ${drive}...`);
+    writeln("0 bytes in bad sectors");
    }
    break;
 
-  case "VER":
-   out("MS-DOS Version 6.22");
+  case "DISKCOPY":
+   {
+    let src=a[1]?.toUpperCase(); let dest=a[2]?.toUpperCase();
+    if(!FS[src]||!FS[dest]){ writeln("Drive not found"); break; }
+    FS[dest].children=JSON.parse(JSON.stringify(FS[src].children));
+    FS[dest].volume=FS[src].volume;
+    FS[dest].serial=FS[src].serial;
+    writeln(`Copy complete from ${src} to ${dest}`);
+   }
+   break;
+
+  case "CD":
+  case "CHDIR":
+   if(a[1]===".."){ if(cwd.length>1) cwd.pop(); }
+   else if(dir[a[1]]?.type==="dir") cwd.push(a[1]);
+   else writeln("Invalid directory");
+   break;
+
+  case "TREE":
+   function tree(d,p=""){
+    for(const k in d){
+     writeln(p+k);
+     if(d[k].type==="dir") tree(d[k].children,p+"│  ");
+    }
+   }
+   tree(dir);
+   break;
+
+  case "TYPE":
+   dir[a[1]]?.type==="file"
+    ? writeln(dir[a[1]].content)
+    : writeln("File not found");
+   break;
+
+  case "DEL":
+   dir[a[1]] ? delete dir[a[1]] : writeln("File not found");
+   break;
+
+  case "COPY":
+   if(dir[a[1]]?.type==="file"){
+    dir[a[2]]={type:"file",content:dir[a[1]].content};
+    writeln("        1 file(s) copied.");
+   }else writeln("File not found");
+   break;
+
+  case "ATTRIB":
+   writeln("A    "+(a[1]||""));
+   break;
+
+  case "BACKUP":
+  case "RESTORE":
+   writeln("Insert diskette and press any key...");
+   break;
+
+  case "APPEND":
+  case "ASSIGN":
+  case "ATMDM":
+   writeln("Command completed.");
+   break;
+
+  case "BASIC":
+   BASIC_MODE=true;
+   writeln("Microsoft BASIC Version 1.10");
+   writeln("Ok");
    break;
 
   case "DATE":
-   out(new Date().toLocaleDateString());
+   writeln(new Date().toLocaleDateString());
    break;
 
   case "TIME":
-   out(new Date().toLocaleTimeString());
+   writeln(new Date().toLocaleTimeString());
    break;
 
-  case "CLS":
-   screen.innerHTML=""; break;
+  case "REBOOT":
+   READY=false; HALTED=false; INPUT=""; POST(); return;
 
-  case "ECHO":
-   out(a.slice(1).join(" ")); break;
+  case "SHUTDOWN":
+   clear(); writeln("It is now safe to turn off your computer."); HALTED=true; break;
 
   default:
-   out("Bad command or file name");
+   writeln("Bad command or file name");
  }
- prompt();
 }
 
-/* ================= INPUT ================= */
-function prompt(){
- out(cwd.join("\\")+">"+INPUT);
-}
-
+/* ================= INPUT HANDLING ================= */
 document.addEventListener("keydown",e=>{
  if(!READY||HALTED) return;
+
  if(e.key==="Backspace"){
   INPUT=INPUT.slice(0,-1);
   screen.innerHTML=screen.innerHTML.slice(0,-1);
  }
  else if(e.key==="Enter"){
-  out("");
-  exec(INPUT);
+  writeln("");
+  const cmd=INPUT;
   INPUT="";
+  exec(cmd);
+  writeln("");
+  prompt();
  }
  else if(e.key.length===1){
   INPUT+=e.key;
-  screen.innerHTML+=e.key;
+  write(e.key);
  }
 });
+
+/* ================= UTILS ================= */
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 /* ================= START ================= */
 POST();
