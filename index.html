@@ -4,230 +4,252 @@
 <meta charset="UTF-8">
 <title>DOS Simulation Environment</title>
 <style>
-body {
-  margin: 0;
-  background: black;
-  color: #00ff00;
-  font-family: "Courier New", monospace;
-}
-#screen {
-  padding: 10px;
-  white-space: pre-wrap;
-}
-.bsob {
-  color: #ffffff;
-  background: #0000aa;
-  padding: 10px;
-}
+body{margin:0;background:black;color:#00ff00;font-family:"Courier New",monospace}
+#wrap{display:flex}
+#screen{padding:10px;white-space:pre-wrap;flex:1}
+#debug{width:360px;border-left:1px solid #003300;padding:8px;font-size:12px;color:#9aff9a}
+.bsod{background:#0000aa;color:white;padding:12px}
+.hidden{display:none}
 </style>
 </head>
 <body>
-<div id="screen"></div>
+<div id="wrap">
+  <div id="screen"></div>
+  <div id="debug" class="hidden"></div>
+</div>
 
 <script>
-/* ============================================================
-   CORE SYSTEM STATE
-============================================================ */
+/* ========================= CORE STATE ========================= */
 
 const screen = document.getElementById("screen");
+const debug = document.getElementById("debug");
+let DEBUG=true, HALTED=false;
 
-const CPU = {
-  AX:0,BX:0,CX:0,DX:0,
-  SI:0,DI:0,BP:0,SP:0,
-  CS:0x1000, IP:0x0000,
-  DS:0x2000, ES:0x2000, SS:0x3000,
-  FLAGS:0,
-  MODE:"real"
+/* CPU + MODES */
+const CPU={
+  AX:0,BX:0,CX:0,DX:0,SI:0,DI:0,BP:0,SP:0,
+  CS:0x1000,IP:0x0000,DS:0x2000,ES:0x2000,SS:0x3000,
+  FLAGS:0, MODE:"real", PAGING:false, V86:false
 };
 
-const MEMORY = {};
-const PORTS = {};
-const TSR = [];
-let HALTED = false;
+/* SYMBOLIC DESCRIPTORS */
+const GDT={present:true};
+const IDT={};
 
-/* ============================================================
-   FILESYSTEM
-============================================================ */
+/* MEMORY (segment:offset → linear simulated) */
+function lin(seg,off){ return ((seg<<4)+off) & 0xFFFFF; }
+const MEMORY={};
 
-const FS = {
-  "C:": {
-    type:"dir",
-    children:{
-      "CONFIG.SYS":{type:"file",content:"DEVICE=HIMEM.SYS\nDOS=HIGH"},
-      "AUTOEXEC.BAT":{type:"file",content:"ECHO Booting DOS...\nTSR CLOCK\nCLS"},
-      "COMMAND.COM":{type:"file",content:""}
-    }
-  }
+/* HARDWARE PORTS */
+const PORTS={};
+
+/* ========================= FILE SYSTEM ========================= */
+
+const FS={
+  "C:":{type:"dir",children:{
+    "CONFIG.SYS":{type:"file",content:"DEVICE=HIMEM.SYS\nDOS=HIGH"},
+    "AUTOEXEC.BAT":{type:"file",content:"ECHO Booting DOS...\nTSR CLOCK\nCLS"},
+    "COMMAND.COM":{type:"file",content:""}
+  }}
+};
+let cwd=["C:"];
+
+function getDir(path=cwd){
+  let n=FS;
+  for(const p of path) n=n[p].children;
+  return n;
+}
+
+/* ========================= OUTPUT ========================= */
+
+function out(t=""){
+  if(HALTED) return;
+  screen.innerHTML+=t+"\n";
+  scroll();
+}
+function scroll(){ window.scrollTo(0,document.body.scrollHeight); }
+function hex(v){return "0x"+(v>>>0).toString(16).toUpperCase();}
+
+/* ========================= DEBUGGER ========================= */
+
+function dbg(){
+  if(!DEBUG) return;
+  debug.classList.remove("hidden");
+  debug.innerHTML=
+`CPU
+AX=${hex(CPU.AX)} BX=${hex(CPU.BX)}
+CX=${hex(CPU.CX)} DX=${hex(CPU.DX)}
+CS:IP=${hex(CPU.CS)}:${hex(CPU.IP)}
+DS=${hex(CPU.DS)} ES=${hex(CPU.ES)}
+MODE=${CPU.MODE} PAGING=${CPU.PAGING} V86=${CPU.V86}
+
+PORTS=${JSON.stringify(PORTS,null,2)}
+`;
+}
+
+/* ========================= INTERRUPTS ========================= */
+
+const TSR=[]; // chained, priority order
+const INT_TABLE={
+  0x10:biosVideo,
+  0x13:biosDisk,
+  0x16:biosKeyboard,
+  0x21:dosServices,
+  0x1C:timerTick
 };
 
-let cwd = ["C:"];
-
-/* ============================================================
-   DISPLAY / OUTPUT
-============================================================ */
-
-function out(text="") {
-  if (HALTED) return;
-  screen.innerHTML += text + "\n";
-  window.scrollTo(0,document.body.scrollHeight);
+function INT(n){
+  if(HALTED) return;
+  // TSR chain first
+  for(const t of TSR) if(t(n,CPU)===false) return;
+  INT_TABLE[n]?.(CPU);
+  dbg();
 }
 
-/* ============================================================
-   INTERRUPTS
-============================================================ */
+/* ========================= BIOS ========================= */
 
-const Interrupts = {
-  0x10: biosVideo,
-  0x16: biosKeyboard,
-  0x21: dosServices
-};
-
-function INT(num) {
-  if (HALTED) return;
-  TSR.forEach(t => t(num,CPU));
-  Interrupts[num]?.(CPU);
+function biosVideo(cpu){
+  const ah=(cpu.AX>>8)&0xFF;
+  if(ah===0x0E) screen.innerHTML+=String.fromCharCode(cpu.AX&0xFF);
 }
 
-/* ============================================================
-   BIOS
-============================================================ */
-
-function biosVideo(cpu) {
-  const ah = cpu.AX >> 8;
-  if (ah === 0x0E) {
-    screen.innerHTML += String.fromCharCode(cpu.AX & 0xFF);
-  }
+function biosKeyboard(cpu){
+  cpu.AX=0; // simulated blocking read
 }
 
-function biosKeyboard(cpu) {
-  cpu.AX = 0;
+function biosDisk(cpu){
+  // AH=02 read sector (success)
+  cpu.FLAGS&=~1;
 }
 
-/* ============================================================
-   DOS SERVICES
-============================================================ */
+/* ========================= DOS ========================= */
 
-function dosServices(cpu) {
-  const ah = cpu.AX >> 8;
-
-  switch(ah) {
-    case 0x09:
-      out(cpu.DX);
+function dosServices(cpu){
+  const ah=(cpu.AX>>8)&0xFF;
+  switch(ah){
+    case 0x09: out(cpu.DX); break;
+    case 0x2C:
+      const d=new Date();
+      cpu.CX=d.getHours();
+      cpu.DX=(d.getMinutes()<<8)|d.getSeconds();
       break;
-
-    case 0x4C:
-      out("\nProgram terminated.");
-      break;
-
-    default:
-      crash("Unhandled INT 21h AH=" + ah.toString(16));
+    case 0x4C: out("Program terminated."); break;
+    default: crash("Unhandled INT 21h AH="+hex(ah));
   }
 }
 
-/* ============================================================
-   TSR SYSTEM
-============================================================ */
+/* ========================= TIMER / TSR ========================= */
 
-function loadTSR(name) {
-  if (name === "CLOCK") {
-    TSR.push((intNum,cpu)=>{
-      if (intNum === 0x1C) {
-        out("[TSR CLOCK] Tick " + new Date().toLocaleTimeString());
-      }
+function timerTick(){
+  // periodic INT 1Ch
+}
+
+function loadTSR(name){
+  if(name==="CLOCK"){
+    TSR.unshift((n)=>{
+      if(n===0x1C){ out("[TSR CLOCK] "+new Date().toLocaleTimeString()); }
     });
-    out("TSR CLOCK loaded resident.");
+    out("TSR CLOCK installed resident.");
   }
 }
 
-/* ============================================================
-   CONFIG.SYS / AUTOEXEC.BAT
-============================================================ */
+/* ========================= PORT I/O ========================= */
 
-function parseConfig() {
-  const cfg = FS["C:"].children["CONFIG.SYS"].content.split("\n");
-  cfg.forEach(line=>{
-    if (line.startsWith("DEVICE=")) {
-      out("Loading device driver " + line.split("=")[1]);
-    }
-    if (line.startsWith("DOS=HIGH")) {
-      CPU.MODE="protected";
-      out("DOS moved to high memory.");
-    }
-  });
+function OUTp(p,v){ PORTS[p]=v; }
+function INp(p){ return PORTS[p]||0; }
+
+/* ========================= CONFIG / AUTOEXEC ========================= */
+
+function parseConfig(){
+  const cfg=FS["C:"].children["CONFIG.SYS"].content.split("\n");
+  for(const l of cfg){
+    if(l.startsWith("DEVICE=")) out("Loading "+l.split("=")[1]);
+    if(l==="DOS=HIGH"){ CPU.MODE="protected"; CPU.PAGING=true; }
+  }
 }
 
-function runAutoexec() {
-  const bat = FS["C:"].children["AUTOEXEC.BAT"].content.split("\n");
-  bat.forEach(cmd=>execute(cmd));
+function runAutoexec(){
+  const bat=FS["C:"].children["AUTOEXEC.BAT"].content.split("\n");
+  for(const c of bat) exec(c);
 }
 
-/* ============================================================
-   HARDWARE PORT I/O
-============================================================ */
+/* ========================= COMMANDS ========================= */
 
-function OUT(port,value) {
-  PORTS[port]=value;
-}
+function exec(line){
+  const a=line.trim().split(/\s+/); if(!a[0]) return;
+  const c=a[0].toUpperCase(), dir=getDir();
 
-function IN(port) {
-  return PORTS[port] || 0;
-}
-
-/* ============================================================
-   COMMAND EXECUTION
-============================================================ */
-
-function execute(cmd) {
-  const parts = cmd.trim().split(" ");
-  const c = parts[0]?.toUpperCase();
-
-  if (!c) return;
-
-  switch(c) {
-    case "ECHO":
-      out(parts.slice(1).join(" "));
+  switch(c){
+    case "DIR":
+      out(" Directory of "+cwd.join("\\"));
+      for(const k in dir) out((dir[k].type==="dir"?"<DIR> ":"      ")+k);
       break;
 
-    case "CLS":
-      screen.innerHTML="";
+    case "CD":
+      if(a[1]===".."){ if(cwd.length>1) cwd.pop(); }
+      else if(dir[a[1]]?.type==="dir") cwd.push(a[1]);
+      else out("Path not found");
       break;
 
-    case "TSR":
-      loadTSR(parts[1]);
+    case "TYPE":
+      if(dir[a[1]]?.type==="file") out(dir[a[1]].content);
+      else out("File not found");
       break;
 
-    case "CRASH":
-      crash("Manual crash invoked.");
+    case "DEL":
+      if(dir[a[1]]) delete dir[a[1]]; else out("File not found");
       break;
+
+    case "COPY":
+      if(dir[a[1]]?.type==="file"){
+        dir[a[2]]={type:"file",content:dir[a[1]].content};
+        out("1 file(s) copied.");
+      } else out("File not found");
+      break;
+
+    case "MKDIR":
+      dir[a[1]]={type:"dir",children:{}};
+      break;
+
+    case "RMDIR":
+      if(dir[a[1]]?.type==="dir") delete dir[a[1]];
+      else out("Directory not found");
+      break;
+
+    case "ECHO": out(a.slice(1).join(" ")); break;
+    case "CLS": screen.innerHTML=""; break;
+    case "TSR": loadTSR(a[1]); break;
+    case "IN": out(hex(INp(parseInt(a[1])))); break;
+    case "OUT": OUTp(parseInt(a[1]),parseInt(a[2])); break;
 
     case "PROT":
-      if (CPU.MODE !== "protected")
-        protFault();
-      else
-        out("Protected-mode call OK.");
+      if(CPU.MODE!=="protected") gpf("Protected-mode call in real mode");
+      else out("Protected-mode call OK");
       break;
 
-    default:
-      out("Bad command or file name");
+    case "V86":
+      if(!CPU.V86) gpf("V86 instruction outside V86 mode");
+      else out("V86 OK");
+      break;
+
+    case "CRASH": crash("Manual crash"); break;
+    case "DEBUG": DEBUG=!DEBUG; debug.classList.toggle("hidden"); break;
+
+    default: out("Bad command or file name");
   }
+  out("\n"+cwd.join("\\")+">");
 }
 
-/* ============================================================
-   PROTECTED MODE FAULT
-============================================================ */
+/* ========================= FAULTS / BSOD ========================= */
 
-function protFault() {
-  crash("General Protection Fault\nCS:IP="+hex(CPU.CS)+":"+hex(CPU.IP));
+function gpf(msg){
+  crash("General Protection Fault\n"+msg+"\nCS:IP="+hex(CPU.CS)+":"+hex(CPU.IP));
 }
 
-/* ============================================================
-   BSOD / HALT
-============================================================ */
-
-function crash(reason) {
-  HALTED = true;
-  screen.innerHTML = `
-<div class="bsob">
+function crash(reason){
+  HALTED=true;
+  screen.innerHTML=
+`<div class="bsod">
 A problem has been detected and DOS has been shut down.
 
 ${reason}
@@ -239,21 +261,15 @@ Press Reset to restart your computer.
 </div>`;
 }
 
-/* ============================================================
-   UTIL
-============================================================ */
-
-function hex(v){return "0x"+v.toString(16).toUpperCase();}
-
-/* ============================================================
-   BOOT SEQUENCE
-============================================================ */
+/* ========================= BOOT ========================= */
 
 out("Starting MS-DOS...");
 parseConfig();
 runAutoexec();
-out("\nC:\\>");
+out(cwd.join("\\")+">");
 
+/* periodic TSR tick */
+setInterval(()=>INT(0x1C),3000);
 </script>
 </body>
 </html>
